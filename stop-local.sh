@@ -3,33 +3,34 @@ set -euo pipefail
 
 # Stop the local Garrison Forge dev server started by start-local.sh
 
-PID_FILE=".dev-server.pid"
+PID_FILE_FRONTEND=".dev-frontend.pid"
+PID_FILE_BACKEND=".dev-backend.pid"
 
-if [ ! -f "$PID_FILE" ]; then
-  echo "No PID file found ($PID_FILE). Is the dev server running?"
-  exit 0
-fi
-
-PID=$(cat "$PID_FILE" || true)
-
-if [ -z "${PID:-}" ]; then
-  echo "PID file is empty. Removing it."
-  rm -f "$PID_FILE"
-  exit 0
-fi
-
-if kill -0 "$PID" 2>/dev/null; then
-  echo "Stopping dev server with PID $PID..."
-  kill "$PID" || true
-  # Give it a moment to shut down
-  sleep 1
-  if kill -0 "$PID" 2>/dev/null; then
-    echo "Process still alive, sending SIGKILL..."
-    kill -9 "$PID" || true
+stop_pid() {
+  local file="$1"
+  if [ ! -f "$file" ]; then
+    return
   fi
-  echo "✅ Dev server stopped."
-else
-  echo "No process with PID $PID is running. Cleaning up PID file."
-fi
+  local PID
+  PID=$(cat "$file" || true)
+  if [ -z "${PID:-}" ]; then
+    rm -f "$file"
+    return
+  fi
+  if kill -0 "$PID" 2>/dev/null; then
+    echo "Stopping process with PID $PID from $file..."
+    kill "$PID" || true
+    sleep 1
+    if kill -0 "$PID" 2>/dev/null; then
+      echo "Process still alive, sending SIGKILL..."
+      kill -9 "$PID" || true
+    fi
+    echo "✅ Process $PID stopped."
+  else
+    echo "No process with PID $PID (from $file) is running. Cleaning up PID file."
+  fi
+  rm -f "$file"
+}
 
-rm -f "$PID_FILE"
+stop_pid "$PID_FILE_FRONTEND"
+stop_pid "$PID_FILE_BACKEND"

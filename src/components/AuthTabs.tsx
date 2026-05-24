@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Role, defaultRoles } from "../models/roles";
+import { UsersStore, type User } from "../models/users";
+import { apiLogin, apiRegister } from "../lib/apiAuth";
 
 interface AuthTabsProps {
-  onAuthenticated: (role: Role) => void;
+  onAuthenticated: (user: User) => void;
 }
 
 export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
@@ -12,14 +13,54 @@ export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [roleId, setRoleId] = useState<string>(defaultRoles.member.id);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const roles = Object.values(defaultRoles);
-    const selected = roles.find((r) => r.id === roleId) ?? defaultRoles.member;
-    // For now, we just "log in" locally and bubble up the role
-    onAuthenticated(selected);
+    setError(null);
+
+    try {
+      if (activeTab === "register") {
+        // Call backend register; also mirror user into local UsersStore for now.
+        const resp = await apiRegister(email.trim(), password, displayName.trim());
+        const localUser = UsersStore.register(email.trim(), displayName.trim(), password);
+        onAuthenticated(localUser);
+        window.localStorage.setItem("garrison-auth-token", resp.token);
+        return;
+      }
+
+      let resp;
+      try {
+        resp = await apiLogin(email.trim(), password);
+      } catch (err: any) {
+        // If backend returns 401 but local login succeeds, auto-register on backend to preserve work.
+        const localUser = UsersStore.login(email.trim(), password);
+        if (err.status === 401 && localUser) {
+          try {
+            const auto = await apiRegister(email.trim(), password, localUser.displayName || "");
+            window.localStorage.setItem("garrison-auth-token", auto.token);
+            onAuthenticated(localUser);
+            return;
+          } catch (inner: any) {
+            setError(inner.message || "Authentication failed");
+            return;
+          }
+        }
+        throw err;
+      }
+
+      const existingLocal = UsersStore.login(email.trim(), password);
+      if (!existingLocal) {
+        // If no local user yet, create one matching backend basics.
+        const created = UsersStore.register(email.trim(), resp.user.displayName || "", password);
+        onAuthenticated(created);
+      } else {
+        onAuthenticated(existingLocal);
+      }
+      window.localStorage.setItem("garrison-auth-token", resp.token);
+    } catch (err: any) {
+      setError(err.message || "Authentication failed");
+    }
   }
 
   return (
@@ -27,7 +68,10 @@ export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
       <div className="flex border-b border-slate-800/80 text-xs font-semibold uppercase tracking-wide text-slate-400">
         <button
           type="button"
-          onClick={() => setActiveTab("login")}
+          onClick={() => {
+            setActiveTab("login");
+            setError(null);
+          }}
           className={`flex-1 py-2 border-b-2 text-center transition-colors ${
             activeTab === "login"
               ? "border-imperial-red text-slate-100"
@@ -38,7 +82,10 @@ export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
         </button>
         <button
           type="button"
-          onClick={() => setActiveTab("register")}
+          onClick={() => {
+            setActiveTab("register");
+            setError(null);
+          }}
           className={`flex-1 py-2 border-b-2 text-center transition-colors ${
             activeTab === "register"
               ? "border-imperial-red text-slate-100"
@@ -87,23 +134,15 @@ export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
           />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="label">Role</label>
-          <select
-            className="input-field bg-bg-softer/90"
-            value={roleId}
-            onChange={(e) => setRoleId(e.target.value)}
-          >
-            {Object.values(defaultRoles).map((role) => (
-              <option key={role.id} value={role.id}>
-                {role.label}
-              </option>
-            ))}
-          </select>
+        {activeTab === "register" && (
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Roles and access levels are configurable later in Settings.
+            First account created on this device becomes <span className="badge-role">Admin</span>.
+            All later registrations start as <span className="badge-role">Member</span>. Admins can
+            promote others.
           </p>
-        </div>
+        )}
+
+        {error && <p className="text-[11px] text-red-400 mt-1">{error}</p>}
 
         <button type="submit" className="btn-primary mt-2">
           {activeTab === "login" ? "Log In" : "Create Account"}

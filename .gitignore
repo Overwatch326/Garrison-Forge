@@ -1,0 +1,13 @@
+# Node / build artifacts
+node_modules
+.dist
+.build
+dist
+
+# Local environment
+.env
+.env.local
+
+# Local helper scripts (not to be committed)
+push-develop.sh
+push-develop.command

@@ -16,6 +16,21 @@ module.exports = {
           red: "#c8102e",
           dark: "#111827",
         },
+        themeNightOps: {
+          bg: '#050609',
+          surface: '#0b1120',
+          softer: '#020617',
+        },
+        themeHangar: {
+          bg: '#0b1120',
+          surface: '#111827',
+          softer: '#020617',
+        },
+        themeBriefing: {
+          bg: '#111827',
+          surface: '#1f2937',
+          softer: '#020617',
+        },
       },
     },
   },

@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  displayName  String?
+  legionId     String?
+  avatarUrl    String?
+  bio          String?
+  signatureHtml String?
+
+  memberships  Membership[]
+  projects     Project[]   @relation("ProjectOwner")
+  createdEvents Event[]    @relation("EventCreator")
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model Garrison {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  forumUrl  String?
+
+  brandingPrimaryLogo  String?
+  brandingSecondaryLogo String?
+
+  memberships Membership[]
+  projects    Project[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Membership {
+  id         String   @id @default(cuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  garrison   Garrison @relation(fields: [garrisonId], references: [id])
+  garrisonId String
+  role       String   // e.g. ADMIN, MEMBER, STAFF
+
+  createdAt DateTime @default(now())
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  costumeType String?
+  status      String   @default("active") // active, closed
+
+  owner      User      @relation("ProjectOwner", fields: [ownerId], references: [id])
+  ownerId    String
+  garrison   Garrison  @relation(fields: [garrisonId], references: [id])
+  garrisonId String
+
+  tasks      Task[]
+  phases     Phase[]
+  components Component[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Phase {
+  id        String   @id @default(cuid())
+  name      String
+  order     Int
+
+  project   Project @relation(fields: [projectId], references: [id])
+  projectId String
+
+  tasks     Task[]
+}
+
+model Component {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // armor-piece, soft-part, prop, electronics
+  sourceType  String   // scratch-built, 3d-printed, commissioned, purchased
+  status      String   // not-started, in-progress, ready-for-approval, approved
+
+  project     Project  @relation(fields: [projectId], references: [id])
+  projectId   String
+
+  tasks       Task[]
+}
+
+model Task {
+  id              String    @id @default(cuid())
+  title           String
+  descriptionHtml String?
+  status          String   // research, ordering, build, approval
+  hours           Float?
+  includeInThread Boolean  @default(true)
+
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+
+  phase     Phase?    @relation(fields: [phaseId], references: [id])
+  phaseId   String?
+
+  component Component? @relation(fields: [componentId], references: [id])
+  componentId String?
+
+  vendors   VendorResource[]
+  images    TaskImage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VendorResource {
+  id        String  @id @default(cuid())
+  name      String
+  website   String?
+  part      String?
+  cost      Float?
+  color     String?
+  notesHtml String?
+
+  task   Task   @relation(fields: [taskId], references: [id])
+  taskId String
+}
+
+model TaskImage {
+  id              String  @id @default(cuid())
+  originalUrl     String
+  annotatedUrl    String?
+  caption         String?
+
+  task   Task   @relation(fields: [taskId], references: [id])
+  taskId String
+}
+
+model UserCostume {
+  id          String  @id @default(cuid())
+  name        String
+  costumeType String?
+  approved    Boolean @default(false)
+
+  // For this prototype, we treat userId as a logical owner ID without an FK constraint.
+  userId String
+
+  signups EventSignup[]
+}
+
+model Event {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  official     Boolean  @default(true)
+  eventType    String   // fundraiser, festival, fun-run, movie-debut, charity-benefit, other
+  participants   String   // 501st-only, open, private
+  costumes       String?  // free-form description of allowed costumes
+  childrenOk     Boolean  @default(false)
+  weaponsAllowed String   @default("none") // none, lightsabers, blasters, other
+  location     String
+  startTime    DateTime
+  endTime      DateTime?
+
+  createdBy   User?  @relation("EventCreator", fields: [createdById], references: [id])
+  createdById String?
+
+  signups EventSignup[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EventSignup {
+  id          String  @id @default(cuid())
+  status      String  @default("signed_up") // signed_up, attended, no_show, cancelled
+  notes       String?
+
+  event   Event @relation(fields: [eventId], references: [id])
+  eventId String
+
+  // For this prototype, userId/displayName/email are logical identifiers, not FKs.
+  userId          String
+  userDisplayName String?
+  userEmail       String?
+
+  costume   UserCostume? @relation(fields: [costumeId], references: [id])
+  costumeId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

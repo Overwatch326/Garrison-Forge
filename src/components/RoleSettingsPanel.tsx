@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Role, createInitialRoleState } from "../models/roles";
+import { Role, allPermissions, createInitialRoleState, RolesStore } from "../models/roles";
 
 export function RoleSettingsPanel() {
   const [state, setState] = useState(createInitialRoleState);
@@ -22,7 +22,9 @@ export function RoleSettingsPanel() {
         description: newDescription.trim() || undefined,
         level: newLevel,
       };
-      return { roles: [...prev.roles, next].sort((a, b) => b.level - a.level) };
+      const roles = [...prev.roles, next].sort((a, b) => b.level - a.level);
+      RolesStore.setState({ roles });
+      return { roles };
     });
 
     setNewLabel("");
@@ -32,7 +34,29 @@ export function RoleSettingsPanel() {
 
   function handleDeleteRole(role: Role) {
     if (role.system) return;
-    setState((prev) => ({ roles: prev.roles.filter((r) => r.id !== role.id) }));
+    setState((prev) => {
+      const roles = prev.roles.filter((r) => r.id !== role.id);
+      RolesStore.setState({ roles });
+      return { roles };
+    });
+  }
+
+  function togglePermission(role: Role, permId: string) {
+    if (role.system && role.id === "admin") return; // keep admin fully powered
+    setState((prev) => {
+      const roles = prev.roles.map((r) => {
+        if (r.id !== role.id) return r;
+        const current = new Set(r.permissions ?? []);
+        if (current.has(permId)) {
+          current.delete(permId);
+        } else {
+          current.add(permId as any);
+        }
+        return { ...r, permissions: Array.from(current) };
+      });
+      RolesStore.setState({ roles });
+      return { roles };
+    });
   }
 
   return (
@@ -83,6 +107,64 @@ export function RoleSettingsPanel() {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
+            Permissions by Role
+          </h3>
+          <div className="border border-slate-800 rounded-md overflow-hidden text-[11px]">
+            <table className="w-full border-collapse">
+              <thead className="bg-slate-900/80">
+                <tr>
+                  <th className="px-2 py-1 text-left text-slate-300 font-semibold">Permission</th>
+                  {state.roles.map((role) => (
+                    <th
+                      key={role.id}
+                      className="px-2 py-1 text-left text-slate-300 font-semibold border-l border-slate-800"
+                    >
+                      {role.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {allPermissions.map((perm) => (
+                  <tr key={perm.id} className="odd:bg-slate-900/40 even:bg-slate-900/10">
+                    <td className="px-2 py-1 align-top">
+                      <div className="text-slate-200">{perm.label}</div>
+                      {perm.description && (
+                        <div className="text-[10px] text-slate-500">{perm.description}</div>
+                      )}
+                    </td>
+                    {state.roles.map((role) => {
+                      const has = new Set(role.permissions ?? []).has(perm.id as any);
+                      const disabled = role.system && role.id === "admin";
+                      return (
+                        <td
+                          key={role.id}
+                          className="px-2 py-1 border-l border-slate-800 text-center align-middle"
+                        >
+                          <button
+                            type="button"
+                            disabled={disabled}
+                            onClick={() => togglePermission(role, perm.id)}
+                            className={`px-2 py-0.5 rounded-full border text-[10px] ${
+                              has
+                                ? "border-emerald-500 text-emerald-400 bg-emerald-500/10"
+                                : "border-slate-700 text-slate-400 bg-slate-900/50"
+                            } ${disabled ? "opacity-60 cursor-not-allowed" : "hover:border-imperial-red/70"}`}
+                          >
+                            {has ? "On" : "Off"}
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

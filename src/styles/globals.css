@@ -7,7 +7,7 @@
 }
 
 body {
-  @apply bg-bg text-slate-100 min-h-screen;
+  @apply min-h-screen text-slate-100;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
@@ -15,8 +15,69 @@ body {
   background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #000 100%);
 }
 
+/* Theme-specific backgrounds */
+.theme-night-ops.imperial-gradient {
+  background: radial-gradient(circle at top, #1f2937 0, #020617 55%, #000 100%);
+}
+
+.theme-hangar-bay.imperial-gradient {
+  background: radial-gradient(circle at top, #4b5563 0, #111827 55%, #020617 100%);
+}
+
+.theme-briefing-room.imperial-gradient {
+  background: radial-gradient(circle at top, #6b7280 0, #111827 45%, #020617 100%);
+}
+
+/* Command Bridge – lighter, high-contrast imperial UI */
+.theme-command-bridge.imperial-gradient {
+  background: radial-gradient(circle at top, #9ca3af 0, #1f2937 50%, #020617 100%);
+}
+
+/* Clone Rex – blue/white with orange accents (501st Captain Rex inspired) */
+.theme-clone-rex.imperial-gradient {
+  background: radial-gradient(circle at top, #1d4ed8 0, #0f172a 50%, #020617 100%);
+}
+
+/* Darth Maul – red/black, high contrast, aggressive */
+.theme-darth-maul.imperial-gradient {
+  background: radial-gradient(circle at top, #b91c1c 0, #111827 55%, #000 100%);
+}
+
+/* Boba Fett – muted green, maroon, sand (armor-inspired) */
+.theme-boba-fett.imperial-gradient {
+  background: radial-gradient(circle at top, #166534 0, #1f2937 45%, #43302a 100%);
+}
+
 .card-surface {
-  @apply bg-bg-soft/90 border border-slate-800/80 rounded-xl shadow-xl;
+  @apply border border-slate-700/80 rounded-xl shadow-xl;
+}
+
+.theme-night-ops .card-surface {
+  @apply bg-slate-900/80;
+}
+
+.theme-hangar-bay .card-surface {
+  @apply bg-slate-800/80;
+}
+
+.theme-briefing-room .card-surface {
+  @apply bg-slate-700/80;
+}
+
+.theme-command-bridge .card-surface {
+  @apply bg-slate-100 text-slate-900 border-slate-300;
+}
+
+.theme-clone-rex .card-surface {
+  @apply bg-slate-900/80 border-blue-500/70;
+}
+
+.theme-darth-maul .card-surface {
+  @apply bg-black/90 border-red-700/80;
+}
+
+.theme-boba-fett .card-surface {
+  @apply bg-slate-900/80 border-emerald-600/70;
 }
 
 .btn-primary {
