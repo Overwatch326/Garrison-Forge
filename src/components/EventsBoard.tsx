@@ -23,6 +23,7 @@ export function EventsBoard({ currentUser }: EventsBoardProps) {
   const [loading, setLoading] = useState(false);
   const [costumes, setCostumes] = useState<ApiUserCostume[]>([]);
   const [signupModalEvent, setSignupModalEvent] = useState<ApiEvent | null>(null);
+  const [troopModeEvent, setTroopModeEvent] = useState<ApiEvent | null>(null);
   const [signupCostumeId, setSignupCostumeId] = useState<string>('');
   const [signupNotes, setSignupNotes] = useState('');
   const [signupSubmitting, setSignupSubmitting] = useState(false);
@@ -278,6 +279,13 @@ export function EventsBoard({ currentUser }: EventsBoardProps) {
                       >
                         {userSignup ? 'Manage Signup' : 'Sign Up'}
                       </button>
+                      <button
+                        type="button"
+                        className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900/70 text-[10px] text-amber-300 hover:border-amber-400"
+                        onClick={() => setTroopModeEvent(ev)}
+                      >
+                        Troop Mode
+                      </button>
                       {(() => {
                         const signup = userSignup;
                         if (!signup || !ev.endTime) return null;
@@ -311,6 +319,87 @@ export function EventsBoard({ currentUser }: EventsBoardProps) {
           )}
         </div>
       </div>
+
+      {troopModeEvent && (
+        <div className="fixed inset-0 z-30 flex flex-col bg-black/95 text-slate-100">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-950/90">
+            <div className="flex flex-col">
+              <span className="text-[11px] uppercase tracking-wide text-slate-500">Troop Mode</span>
+              <span className="text-sm font-semibold truncate">{troopModeEvent.title}</span>
+              <span className="text-[11px] text-slate-400">
+                {new Date(troopModeEvent.startTime).toLocaleString()} @ {troopModeEvent.location}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="text-[11px] text-slate-400 hover:text-slate-100"
+              onClick={() => setTroopModeEvent(null)}
+            >
+              Close ✕
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-3 text-[11px]">
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="px-2 py-1 rounded-full border border-slate-700 bg-slate-900/80">
+                {troopModeEvent.eventType}
+              </span>
+              <span className="px-2 py-1 rounded-full border border-slate-700 bg-slate-900/80">
+                {troopModeEvent.participants}
+              </span>
+              {troopModeEvent.childrenOk && (
+                <span className="px-2 py-1 rounded-full border border-slate-700 bg-slate-900/80">
+                  Children Allowed
+                </span>
+              )}
+              <span className="px-2 py-1 rounded-full border border-slate-700 bg-slate-900/80">
+                Weapons: {troopModeEvent.weaponsAllowed}
+              </span>
+            </div>
+
+            {troopModeEvent.description && (
+              <div className="mt-1 text-[11px] text-slate-300 bg-slate-900/60 border border-slate-800 rounded p-2">
+                {troopModeEvent.description}
+              </div>
+            )}
+
+            <div className="mt-2">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-slate-400 mb-1">
+                Attending Members
+              </h4>
+              <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
+                {(troopModeEvent.signups || []).map((s) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between gap-2 border border-slate-800 rounded px-2 py-1 bg-slate-950/70"
+                  >
+                    <div className="flex flex-col">
+                      <span className="text-[11px] text-slate-100">
+                        {getSignupDisplayName(s)}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {s.costume
+                          ? `${s.costume.name}${
+                              s.costume.costumeType ? ` (${s.costume.costumeType})` : ''
+                            }`
+                          : 'No costume set'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-end text-[10px] text-slate-400">
+                      <span>Status: {s.status}</span>
+                      {s.notes && <span className="line-clamp-1 max-w-[160px]">{s.notes}</span>}
+                    </div>
+                  </div>
+                ))}
+
+                {(!troopModeEvent.signups || troopModeEvent.signups.length === 0) && (
+                  <p className="text-[11px] text-slate-500">No signups yet.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {signupModalEvent && (
         <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/70">
