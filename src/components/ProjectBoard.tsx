@@ -379,17 +379,10 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
     if (!vendorName.trim()) return;
 
     const activeProject = projects.find((p) => p.id === activeProjectId) || null;
-    const targetTask =
-      selectedTask ||
-      (activeProject
-        ? tasks.find((t) => t.projectId === activeProject.id) || null
-        : null);
-
-    if (!targetTask) return;
-
     const costValue = vendorCost.trim() ? Number(vendorCost) : undefined;
 
-    // Log into global resource library for future builds
+    // Always log into global resource library for future builds,
+    // even if we can't yet attach to a specific task.
     ResourceLibraryStore.add({
       name: vendorName.trim(),
       item: vendorPart.trim() || vendorName.trim(),
@@ -397,8 +390,25 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
       website: vendorWebsite.trim() || undefined,
       notes: undefined,
       costumeTypeUsed: activeProject?.costumeType,
-      projectIdUsed: targetTask.projectId,
+      projectIdUsed: activeProject?.id,
     });
+
+    // Then try to attach this resource to a concrete task in the current build
+    const targetTask =
+      selectedTask ||
+      (activeProject
+        ? tasks.find((t) => t.projectId === activeProject.id) || null
+        : null);
+
+    if (!targetTask) {
+      // No task yet to attach to; just treat this as a library-only entry
+      setVendorName('');
+      setVendorWebsite('');
+      setVendorPart('');
+      setVendorCost('');
+      setVendorColor('');
+      return;
+    }
 
     if (useBackend) {
       try {
