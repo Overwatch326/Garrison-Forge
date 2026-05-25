@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Garrison Forge – Build Thread Workshop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-title">
+        <h1>Garrison Forge</h1>
+        <p class="subtitle">Build, document, and share your 501st armor projects</p>
+      </div>
+      <div class="project-meta">
+        <label>
+          Project Name
+          <input id="project-name" type="text" placeholder="e.g. ANH Stunt TK" />
+        </label>
+        <label>
+          Armor Type
+          <input id="project-type" type="text" placeholder="e.g. TK, TI, TI Reserve" />
+        </label>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="thread-panel">
+        <header class="panel-header">
+          <h2>Build Thread</h2>
+          <div class="panel-actions">
+            <button id="import-json-btn" class="secondary">Import JSON</button>
+            <button id="export-markdown-btn" class="secondary">Export Markdown</button>
+            <button id="export-json-btn" class="secondary">Export JSON</button>
+            <button id="new-entry-btn" class="primary">New Update</button>
+          </div>
+          <input id="import-json-input" type="file" accept="application/json" style="display:none" />
+        </header>
+        <div id="thread-list" class="thread-list" aria-live="polite"></div>
+
+        <section class="crl-panel" aria-label="CRL checklist">
+          <header class="crl-header">
+            <h3>CRL Checklist</h3>
+            <p id="crl-subtitle">Set Armor Type above to load a starter checklist.</p>
+          </header>
+          <div id="crl-items" class="crl-items"></div>
+        </section>
+      </section>
+
+      <section class="editor-panel">
+        <header class="panel-header">
+          <h2>Update Editor</h2>
+        </header>
+
+        <form id="entry-form" class="entry-form" autocomplete="off">
+          <input type="hidden" id="entry-id" />
+
+          <label>
+            Title
+            <input id="entry-title" type="text" placeholder="e.g. Trimming forearms" required />
+          </label>
+
+          <label>
+            Stage
+            <select id="entry-stage">
+              <option value="research">Research</option>
+              <option value="build">Build</option>
+              <option value="fit">Fit / Test Fit</option>
+              <option value="approval">Approval Photos</option>
+            </select>
+          </label>
+
+          <label>
+            Notes
+            <textarea
+              id="entry-notes"
+              rows="5"
+              placeholder="Describe what you did, questions, references, etc."
+            ></textarea>
+          </label>
+
+          <div class="image-tools">
+            <div class="upload-group">
+              <label for="image-upload" class="file-label">Attach / Change Image</label>
+              <input id="image-upload" type="file" accept="image/*" />
+            </div>
+
+            <div class="markup-controls">
+              <span class="label">Markup</span>
+              <label>
+                Color
+                <input id="brush-color" type="color" value="#ff0000" />
+              </label>
+              <label>
+                Size
+                <input id="brush-size" type="range" min="2" max="20" value="4" />
+              </label>
+              <button type="button" id="toggle-draw" class="secondary">Draw</button>
+              <button type="button" id="clear-markup" class="secondary">Clear Markup</button>
+            </div>
+          </div>
+
+          <div class="canvas-wrapper">
+            <canvas id="markup-canvas" aria-label="Image markup canvas"></canvas>
+            <p class="canvas-hint">Upload an image, then click "Draw" to annotate. Changes are saved with this update in your browser.</p>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="primary">Save Update</button>
+            <button type="button" id="delete-entry" class="danger" disabled>Delete</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>Data is stored locally in this browser (localStorage). Export features can be added later.</span>
+    </footer>
+
+    <script src="js/thread.js"></script>
+    <script src="js/imageEditor.js"></script>
+    <script src="js/crl.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
