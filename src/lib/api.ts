@@ -18,6 +18,7 @@ export interface ApiProject {
   id: string;
   name: string;
   costumeType?: string | null;
+  crlUrl?: string | null;
   status?: string | null;
   ownerId: string;
   garrisonId: string;
@@ -85,6 +86,7 @@ export async function apiCreateComponent(
 export async function apiCreateProject(input: {
   name: string;
   costumeType?: string;
+  crlUrl?: string;
   ownerId: string;
   garrisonId: string;
 }): Promise<ApiProject> {

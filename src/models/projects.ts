@@ -62,13 +62,16 @@ export interface Task {
 }
 
 export type ProjectStatus = 'active' | 'closed';
+export type ProjectStage = TaskStatus; // reuse same stages for builds
 
 export interface Project {
   id: ProjectId;
   ownerId: UserId;
   name: string;
   costumeType?: string;
+  crlUrl?: string;
   status?: ProjectStatus;
+  pipelineStatus?: ProjectStage;
   members: UserId[]; // owner + collaborators
   createdAt: string;
   updatedAt: string;
@@ -94,6 +97,7 @@ function loadState(): ProjectState {
     const projects = (parsed.projects ?? []).map((p) => ({
       ...p,
       status: (p as any).status || 'active',
+      pipelineStatus: (p as any).pipelineStatus || 'research',
       members: Array.isArray((p as any).members) && (p as any).members.length
         ? (p as any).members
         : [p.ownerId],
@@ -137,13 +141,15 @@ export const ProjectStore = {
     return state.tasks.filter((t) => t.projectId === projectId);
   },
 
-  createProject(ownerId: UserId, name: string, costumeType?: string): Project {
+  createProject(ownerId: UserId, name: string, costumeType?: string, crlUrl?: string): Project {
     const project: Project = {
       id: crypto.randomUUID(),
       ownerId,
       name,
       costumeType,
+      crlUrl,
       status: 'active',
+      pipelineStatus: 'research',
       members: [ownerId],
       createdAt: nowIso(),
       updatedAt: nowIso(),
@@ -213,6 +219,14 @@ export const ProjectStore = {
     if (!proj) return null;
     proj.status = status;
     proj.updatedAt = nowIso();
+    saveState(state);
+    return proj;
+  },
+
+  updateProject(projectId: ProjectId, patch: Partial<Project>): Project | null {
+    const proj = state.projects.find((p) => p.id === projectId);
+    if (!proj) return null;
+    Object.assign(proj, patch, { updatedAt: nowIso() });
     saveState(state);
     return proj;
   },

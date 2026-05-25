@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthTabs } from '../components/AuthTabs';
 import { RoleSettingsPanel } from '../components/RoleSettingsPanel';
 import { ProjectBoard } from '../components/ProjectBoard';
+import { OverviewBoard } from '../components/OverviewBoard';
 import { EventsBoard } from '../components/EventsBoard';
 import { ProfileSettingsPanel } from '../components/ProfileSettingsPanel';
 import { ProfileCostumesPanel } from '../components/ProfileCostumesPanel';
@@ -10,6 +11,7 @@ import { GarrisonInfoSettingsPanel } from '../components/GarrisonInfoSettingsPan
 import { ThemeSettingsPanel } from '../components/ThemeSettingsPanel';
 import { BackupPanel } from '../components/BackupPanel';
 import { EventsAdminPanel } from '../components/EventsAdminPanel';
+import { ChecklistSettingsPanel } from '../components/ChecklistSettingsPanel';
 import { AppConfigStore } from '../models/appConfig';
 import type { User } from '../models/users';
 
@@ -45,13 +47,16 @@ type SettingsView =
   | 'garrison-info'
   | 'theme'
   | 'events-admin'
+  | 'checklists'
   | 'backup';
 
 export function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [page, setPage] = useState<'auth' | 'dashboard'>('auth');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [section, setSection] = useState<'projects' | 'events' | 'settings'>('projects');
+  const [section, setSection] = useState<'overview' | 'projects' | 'events' | 'settings'>('overview');
+  const [startNewBuild, setStartNewBuild] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [settingsView, setSettingsView] = useState<SettingsView>('menu');
   const branding = AppConfigStore.getBranding();
   const theme = AppConfigStore.getTheme();
@@ -59,6 +64,7 @@ export function App() {
   function handleAuthenticated(user: User) {
     setCurrentUser(user);
     setPage('dashboard');
+    setSection('overview');
   }
 
   function handleLogout() {
@@ -174,6 +180,12 @@ export function App() {
             </p>
           </div>
           <SidebarNavButton
+            active={section === 'overview'}
+            onClick={() => setSection('overview')}
+          >
+            Overview
+          </SidebarNavButton>
+          <SidebarNavButton
             active={section === 'projects'}
             onClick={() => setSection('projects')}
           >
@@ -197,7 +209,27 @@ export function App() {
         </aside>
 
         <main className="flex-1 px-4 py-4 flex flex-col gap-4 overflow-x-hidden">
-          {section === 'projects' && currentUser && <ProjectBoard currentUser={currentUser} />}
+          {section === 'overview' && currentUser && (
+            <OverviewBoard
+              currentUser={currentUser}
+              onNewBuild={() => {
+                setStartNewBuild(true);
+                setSection('projects');
+              }}
+              onOpenBuild={(projectId) => {
+                setSelectedProjectId(projectId);
+                setSection('projects');
+              }}
+            />
+          )}
+          {section === 'projects' && currentUser && (
+            <ProjectBoard
+              currentUser={currentUser}
+              startNewBuild={startNewBuild}
+              onNewBuildHandled={() => setStartNewBuild(false)}
+              selectedProjectId={selectedProjectId}
+            />
+          )}
 
           {section === 'events' && currentUser && <EventsBoard currentUser={currentUser} />}
 
@@ -290,6 +322,19 @@ export function App() {
                       </h2>
                       <p className="text-[11px] text-slate-400">
                         Create and manage events members can sign up for.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="card-surface p-4 text-left text-sm text-slate-200 hover:border-imperial-red/70 transition-colors"
+                      onClick={() => setSettingsView('checklists')}
+                    >
+                      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-300 mb-1">
+                        CRL Checklists
+                      </h2>
+                      <p className="text-[11px] text-slate-400">
+                        Define shared body areas (Head, Torso, Legs) used in build checklists.
                       </p>
                     </button>
 
@@ -431,6 +476,23 @@ export function App() {
                   </div>
 
                   <EventsAdminPanel currentUser={currentUser} />
+                </>
+              )}
+
+              {settingsView === 'checklists' && (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="text-[11px] text-slate-400 hover:text-slate-200"
+                      onClick={() => setSettingsView('menu')}
+                    >
+                      ← Back to Settings
+                    </button>
+                    <p className="text-[11px] text-slate-500">CRL Checklists</p>
+                  </div>
+
+                  <ChecklistSettingsPanel />
                 </>
               )}
             </div>

@@ -12,6 +12,8 @@ interface Point {
   y: number;
 }
 
+type Tool = 'brush' | 'box' | 'arrow';
+
 export function PhotoAnnotator({ imageDataUrl, initialAnnotatedDataUrl, onSave, onCancel }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -19,6 +21,7 @@ export function PhotoAnnotator({ imageDataUrl, initialAnnotatedDataUrl, onSave, 
   const [lastPoint, setLastPoint] = useState<Point | null>(null);
   const [brushColor, setBrushColor] = useState<string>('#f97373');
   const [brushSize, setBrushSize] = useState<number>(3);
+  const [tool, setTool] = useState<Tool>('brush');
 
   useEffect(() => {
     const img = new Image();
@@ -67,6 +70,8 @@ export function PhotoAnnotator({ imageDataUrl, initialAnnotatedDataUrl, onSave, 
 
   function handleMouseMove(e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) {
     if (!isDrawing || !lastPoint) return;
+    if (tool !== 'brush') return; // box/arrow draw on mouse up only
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -86,7 +91,62 @@ export function PhotoAnnotator({ imageDataUrl, initialAnnotatedDataUrl, onSave, 
     setLastPoint(point);
   }
 
-  function handleMouseUp() {
+  function drawBox(from: Point, to: Point) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    const x = Math.min(from.x, to.x);
+    const y = Math.min(from.y, to.y);
+    const w = Math.abs(from.x - to.x);
+    const h = Math.abs(from.y - to.y);
+    ctx.strokeRect(x, y, w, h);
+  }
+
+  function drawArrow(from: Point, to: Point) {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.strokeStyle = brushColor;
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+
+    // main line
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+
+    // arrow head
+    const angle = Math.atan2(to.y - from.y, to.x - from.x);
+    const headLength = 8 + brushSize; // a bit bigger for thicker brushes
+    const arrowAngles = [Math.PI / 7, -Math.PI / 7];
+    arrowAngles.forEach((a) => {
+      const x = to.x - headLength * Math.cos(angle + a);
+      const y = to.y - headLength * Math.sin(angle + a);
+      ctx.beginPath();
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    });
+  }
+
+  function handleMouseUp(e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) {
+    if (isDrawing && lastPoint && tool !== 'brush') {
+      const point = getCanvasPoint(e);
+      if (point) {
+        if (tool === 'box') {
+          drawBox(lastPoint, point);
+        } else if (tool === 'arrow') {
+          drawArrow(lastPoint, point);
+        }
+      }
+    }
+
     setIsDrawing(false);
     setLastPoint(null);
   }
@@ -133,6 +193,43 @@ export function PhotoAnnotator({ imageDataUrl, initialAnnotatedDataUrl, onSave, 
 
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap gap-3 items-center text-[11px] text-slate-200 mb-2">
+            <div className="flex items-center gap-1 border border-slate-700 rounded px-1.5 py-0.5 bg-slate-900/60">
+              <span className="text-slate-400 mr-1">Tool</span>
+              <button
+                type="button"
+                className={`px-2 py-0.5 rounded text-[10px] border ${
+                  tool === 'brush'
+                    ? 'border-imperial-red bg-imperial-red/30 text-slate-50'
+                    : 'border-transparent text-slate-300 hover:text-slate-50'
+                }`}
+                onClick={() => setTool('brush')}
+              >
+                Brush
+              </button>
+              <button
+                type="button"
+                className={`px-2 py-0.5 rounded text-[10px] border ${
+                  tool === 'box'
+                    ? 'border-imperial-red bg-imperial-red/30 text-slate-50'
+                    : 'border-transparent text-slate-300 hover:text-slate-50'
+                }`}
+                onClick={() => setTool('box')}
+              >
+                Box
+              </button>
+              <button
+                type="button"
+                className={`px-2 py-0.5 rounded text-[10px] border ${
+                  tool === 'arrow'
+                    ? 'border-imperial-red bg-imperial-red/30 text-slate-50'
+                    : 'border-transparent text-slate-300 hover:text-slate-50'
+                }`}
+                onClick={() => setTool('arrow')}
+              >
+                Arrow
+              </button>
+            </div>
+
             <label className="flex items-center gap-1">
               <span className="text-slate-400">Color</span>
               <input
