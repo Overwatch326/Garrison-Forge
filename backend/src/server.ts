@@ -13,7 +13,12 @@ const server = Fastify({
 
 async function buildServer() {
   await server.register(cors, {
-    origin: true,
+    origin: (origin, cb) => {
+      // Allow all origins in production for now; you can tighten this later
+      cb(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
   await server.register(sensible);
   await server.register(jwt, {
