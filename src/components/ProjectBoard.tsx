@@ -376,23 +376,20 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
 
   async function handleAddVendor(e: React.FormEvent) {
     e.preventDefault();
-    if (!selectedTask || !vendorName.trim()) return;
+    if (!vendorName.trim()) return;
+
+    const activeProject = projects.find((p) => p.id === activeProjectId) || null;
+    const targetTask =
+      selectedTask ||
+      (activeProject
+        ? tasks.find((t) => t.projectId === activeProject.id) || null
+        : null);
+
+    if (!targetTask) return;
 
     const costValue = vendorCost.trim() ? Number(vendorCost) : undefined;
 
     // Log into global resource library for future builds
-    const activeProject = projects.find((p) => p.id === activeProjectId) || null;
-
-  // Load per-project checklist when active project changes (front-end only)
-  useEffect(() => {
-    if (!activeProject) {
-      setChecklistAreas([]);
-      return;
-    }
-    const stored = ProjectChecklistStore.getForProject(activeProject.id);
-    setChecklistAreas(stored.areas || []);
-    setAvailableAreas(CrlTemplateStore.getAreas());
-  }, [activeProject?.id]);
     ResourceLibraryStore.add({
       name: vendorName.trim(),
       item: vendorPart.trim() || vendorName.trim(),
@@ -400,12 +397,12 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
       website: vendorWebsite.trim() || undefined,
       notes: undefined,
       costumeTypeUsed: activeProject?.costumeType,
-      projectIdUsed: selectedTask.projectId,
+      projectIdUsed: targetTask.projectId,
     });
 
     if (useBackend) {
       try {
-        const created = await apiCreateVendor(selectedTask.id, {
+        const created = await apiCreateVendor(targetTask.id, {
           name: vendorName.trim(),
           website: vendorWebsite.trim() || undefined,
           part: vendorPart.trim() || undefined,
@@ -415,7 +412,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
         });
         setTasks((prev) =>
           prev.map((t) =>
-            t.id === selectedTask.id
+            t.id === targetTask.id
               ? {
                   ...t,
                   vendors: [
@@ -448,10 +445,10 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
         notesHtml: undefined,
       };
 
-      ProjectStore.updateTask(selectedTask.id, {
-        vendors: [...(selectedTask.vendors || []), newVendor],
+      ProjectStore.updateTask(targetTask.id, {
+        vendors: [...(targetTask.vendors || []), newVendor],
       });
-      refreshTasks(selectedTask.projectId);
+      refreshTasks(targetTask.projectId);
     }
 
     setVendorName('');
@@ -462,14 +459,16 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
   }
 
   async function handleRemoveVendor(id: string) {
-    if (!selectedTask) return;
+    // Find which task owns this vendor
+    const owningTask = tasks.find((t) => (t.vendors || []).some((v) => v.id === id));
+    if (!owningTask) return;
 
     if (useBackend) {
       try {
         await apiDeleteVendor(id);
         setTasks((prev) =>
           prev.map((t) =>
-            t.id === selectedTask.id
+            t.id === owningTask.id
               ? {
                   ...t,
                   vendors: (t.vendors || []).filter((v) => v.id !== id),
@@ -481,10 +480,9 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
         // ignore
       }
     } else {
-      ProjectStore.updateTask(selectedTask.id, {
-        vendors: selectedTask.vendors.filter((v) => v.id !== id),
-      });
-      refreshTasks(selectedTask.projectId);
+      const updatedVendors = (owningTask.vendors || []).filter((v) => v.id !== id);
+      ProjectStore.updateTask(owningTask.id, { vendors: updatedVendors });
+      refreshTasks(owningTask.projectId);
     }
   }
 
@@ -1557,6 +1555,93 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                         </div>
                       </div>
                     ))}
+                </div>
+              </div>
+
+              {/* Global resource library */}
+              <div className="mt-4 border border-slate-800 rounded-md overflow-hidden">
+                <div className="flex items-center justify-between px-2 py-1.5 bg-slate-950/80 text-[10px] text-slate-400">
+                  <p className="uppercase tracking-wide">Shared Resource Library</p>
+                  <p className="text-[10px] text-slate-500">
+                    Entries from all builds on this device
+                  </p>
+                </div>
+                <div className="grid grid-cols-5 gap-1 px-2 py-1.5 text-[10px] bg-slate-950/60 text-slate-400 border-t border-slate-800">
+                  <span>Vendor</span>
+                  <span>Item</span>
+                  <span>Cost</span>
+                  <span>Used On</span>
+                  <span className="text-right">Attach</span>
+                </div>
+                <div className="divide-y divide-slate-800 text-[11px] max-h-60 overflow-y-auto">
+                  {ResourceLibraryStore.getAll().length === 0 ? (
+                    <div className="px-2 py-2 text-[11px] text-slate-500">
+                      No shared resources yet. Adding vendors will grow this library for future builds.
+                    </div>
+                  ) : (
+                    ResourceLibraryStore.getAll().map((entry) => (
+                      <div
+                        key={entry.id}
+                        className="grid grid-cols-5 gap-1 px-2 py-1 items-center bg-slate-950/40"
+                      >
+                        <div className="truncate text-slate-100">{entry.name}</div>
+                        <div className="truncate text-slate-200">{entry.item}</div>
+                        <div className="truncate text-slate-200">
+                          {typeof entry.cost === 'number'
+                            ? `$${entry.cost.toFixed(2)}`
+                            : '—'}
+                        </div>
+                        <div className="truncate text-[10px] text-slate-400">
+                          {entry.costumeTypeUsed || '—'}
+                        </div>
+                        <div className="flex justify-end">
+                          <button
+                            type="button"
+                            className="text-[10px] text-emerald-400 hover:text-emerald-200"
+                            onClick={() => {
+                              const activeProject =
+                                projects.find((p) => p.id === activeProjectId) || null;
+                              const targetTask =
+                                selectedTask ||
+                                (activeProject
+                                  ? tasks.find((t) => t.projectId === activeProject.id) || null
+                                  : null);
+                              if (!targetTask) return;
+
+                              const newVendor = {
+                                id: crypto.randomUUID(),
+                                name: entry.name,
+                                website: entry.website || undefined,
+                                part: entry.item,
+                                cost: entry.cost,
+                                color: undefined,
+                                notesHtml: undefined,
+                              };
+
+                              if (useBackend) {
+                                // Attach via API in a real backend scenario
+                                // For now, just update local state
+                                setTasks((prev) =>
+                                  prev.map((t) =>
+                                    t.id === targetTask.id
+                                      ? { ...t, vendors: [...(t.vendors || []), newVendor] }
+                                      : t,
+                                  ),
+                                );
+                              } else {
+                                ProjectStore.updateTask(targetTask.id, {
+                                  vendors: [...(targetTask.vendors || []), newVendor],
+                                });
+                                refreshTasks(targetTask.projectId);
+                              }
+                            }}
+                          >
+                            Attach
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
