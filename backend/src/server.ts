@@ -7,6 +7,7 @@ import { registerProjectRoutes } from './routes/projects';
 import { registerAuthRoutes } from './routes/auth';
 import { registerEventRoutes } from './routes/events';
 import { registerUserRoutes } from './routes/users';
+import { registerAdminRoutes } from './routes/admin';
 
 const server = Fastify({
   logger: true,
@@ -34,6 +35,7 @@ async function buildServer() {
   await registerProjectRoutes(server);
   await registerEventRoutes(server);
   await registerUserRoutes(server);
+  await registerAdminRoutes(server);
 
   return server;
 }

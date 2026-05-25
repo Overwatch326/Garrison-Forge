@@ -8,6 +8,7 @@ import { ProfileCostumesPanel } from '../components/ProfileCostumesPanel';
 import { AppBrandingSettingsPanel } from '../components/AppBrandingSettingsPanel';
 import { GarrisonInfoSettingsPanel } from '../components/GarrisonInfoSettingsPanel';
 import { ThemeSettingsPanel } from '../components/ThemeSettingsPanel';
+import { BackupPanel } from '../components/BackupPanel';
 import { EventsAdminPanel } from '../components/EventsAdminPanel';
 import { AppConfigStore } from '../models/appConfig';
 import type { User } from '../models/users';
@@ -36,7 +37,15 @@ function SidebarNavButton({
   );
 }
 
-type SettingsView = 'menu' | 'profile' | 'roles' | 'branding' | 'garrison-info' | 'theme';
+type SettingsView =
+  | 'menu'
+  | 'profile'
+  | 'roles'
+  | 'branding'
+  | 'garrison-info'
+  | 'theme'
+  | 'events-admin'
+  | 'backup';
 
 export function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -283,6 +292,19 @@ export function App() {
                         Create and manage events members can sign up for.
                       </p>
                     </button>
+
+                    <button
+                      type="button"
+                      className="card-surface p-4 text-left text-sm text-slate-200 hover:border-imperial-red/70 transition-colors"
+                      onClick={() => setSettingsView('backup')}
+                    >
+                      <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-300 mb-1">
+                        Data Backup / Export
+                      </h2>
+                      <p className="text-[11px] text-slate-400">
+                        Download a JSON backup of users, projects, and events.
+                      </p>
+                    </button>
                   </div>
                 </>
               )}
@@ -375,6 +397,23 @@ export function App() {
                   </div>
 
                   <ThemeSettingsPanel />
+                </>
+              )}
+
+              {settingsView === 'backup' && (
+                <>
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      className="text-[11px] text-slate-400 hover:text-slate-200"
+                      onClick={() => setSettingsView('menu')}
+                    >
+                      ← Back to Settings
+                    </button>
+                    <p className="text-[11px] text-slate-500">Data Backup / Export</p>
+                  </div>
+
+                  <BackupPanel />
                 </>
               )}
 
