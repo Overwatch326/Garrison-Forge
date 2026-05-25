@@ -44,9 +44,10 @@ async function start() {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
-  // Only start the server if this file is executed directly
-  start();
-}
+// Start the server when this module is executed
+start().catch((err) => {
+  server.log.error(err);
+  process.exit(1);
+});
 
 export { buildServer };
