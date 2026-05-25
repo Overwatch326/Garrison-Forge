@@ -95,6 +95,11 @@ export function EventsBoard({ currentUser }: EventsBoardProps) {
       await apiUpdateEventSignup(signup.id, { status });
       const updatedEvents = await apiGetEvents(scope);
       setEvents(updatedEvents);
+      // Keep troop mode view in sync if it's open
+      if (troopModeEvent) {
+        const refreshed = updatedEvents.find((e) => e.id === troopModeEvent.id) || null;
+        setTroopModeEvent(refreshed);
+      }
     } catch {
       // ignore for now
     }
@@ -368,29 +373,57 @@ export function EventsBoard({ currentUser }: EventsBoardProps) {
                 Attending Members
               </h4>
               <div className="flex flex-col gap-1 max-h-[60vh] overflow-y-auto">
-                {(troopModeEvent.signups || []).map((s) => (
-                  <div
-                    key={s.id}
-                    className="flex items-center justify-between gap-2 border border-slate-800 rounded px-2 py-1 bg-slate-950/70"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-[11px] text-slate-100">
-                        {getSignupDisplayName(s)}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        {s.costume
-                          ? `${s.costume.name}${
-                              s.costume.costumeType ? ` (${s.costume.costumeType})` : ''
-                            }`
-                          : 'No costume set'}
-                      </span>
+                {(troopModeEvent.signups || []).map((s) => {
+                  const eventEnd = troopModeEvent.endTime
+                    ? new Date(troopModeEvent.endTime)
+                    : null;
+                  const canMarkAttendance = !!eventEnd && eventEnd <= now;
+
+                  return (
+                    <div
+                      key={s.id}
+                      className="flex items-center justify-between gap-2 border border-slate-800 rounded px-2 py-1 bg-slate-950/70"
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-[11px] text-slate-100">
+                          {getSignupDisplayName(s)}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {s.costume
+                            ? `${s.costume.name}${
+                                s.costume.costumeType ? ` (${s.costume.costumeType})` : ''
+                              }`
+                            : 'No costume set'}
+                        </span>
+                        <span className="text-[10px] text-slate-500">Status: {s.status}</span>
+                        {s.notes && (
+                          <span className="text-[10px] text-slate-500 line-clamp-1 max-w-[200px]">
+                            {s.notes}
+                          </span>
+                        )}
+                      </div>
+
+                      {canMarkAttendance && (
+                        <div className="flex flex-col items-end gap-1 text-[10px]">
+                          <button
+                            type="button"
+                            className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900/70 text-emerald-400 hover:border-emerald-500"
+                            onClick={() => handleAttendanceToggle(s, 'attended')}
+                          >
+                            Attended
+                          </button>
+                          <button
+                            type="button"
+                            className="px-2 py-0.5 rounded-md border border-slate-700 bg-slate-900/70 text-red-400 hover:border-red-500"
+                            onClick={() => handleAttendanceToggle(s, 'no_show')}
+                          >
+                            No Show
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex flex-col items-end text-[10px] text-slate-400">
-                      <span>Status: {s.status}</span>
-                      {s.notes && <span className="line-clamp-1 max-w-[160px]">{s.notes}</span>}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {(!troopModeEvent.signups || troopModeEvent.signups.length === 0) && (
                   <p className="text-[11px] text-slate-500">No signups yet.</p>
