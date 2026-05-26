@@ -75,6 +75,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
   const [vendorCost, setVendorCost] = useState('');
   const [vendorColor, setVendorColor] = useState('');
   const [showResourcesModal, setShowResourcesModal] = useState(false);
+  const [resourceLibraryEntries, setResourceLibraryEntries] = useState<ResourceEntry[]>([]);
 
   const [photoFiles, setPhotoFiles] = useState<FileList | null>(null);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -395,6 +396,9 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
       projectIdUsed: activeProject?.id,
     });
 
+    // Refresh local view of library entries
+    setResourceLibraryEntries(ResourceLibraryStore.getAll());
+
     // Then try to attach this resource to a concrete task in the current build
     const targetTask =
       selectedTask ||
@@ -633,6 +637,13 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
   const checklistCompletionPct = totalChecklistItems
     ? Math.round((completedChecklistItems / totalChecklistItems) * 100)
     : 0;
+
+  useEffect(() => {
+    // Load shared resource library entries whenever the board mounts or updates
+    if (typeof window !== 'undefined') {
+      setResourceLibraryEntries(ResourceLibraryStore.getAll());
+    }
+  }, []);
 
   async function handleAddComponent(name: string) {
     if (!activeProject || !useBackend) return;
@@ -1598,12 +1609,12 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                   <span className="text-right">Attach</span>
                 </div>
                 <div className="divide-y divide-slate-800 text-[11px] max-h-60 overflow-y-auto">
-                  {ResourceLibraryStore.getAll().length === 0 ? (
+                  {resourceLibraryEntries.length === 0 ? (
                     <div className="px-2 py-2 text-[11px] text-slate-500">
                       No shared resources yet. Adding vendors will grow this library for future builds.
                     </div>
                   ) : (
-                    ResourceLibraryStore.getAll().map((entry) => (
+                    resourceLibraryEntries.map((entry) => (
                       <div
                         key={entry.id}
                         className="grid grid-cols-5 gap-1 px-2 py-1 items-center bg-slate-950/40"
@@ -1695,6 +1706,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                               className="text-[10px] text-slate-500 hover:text-red-400"
                               onClick={() => {
                                 ResourceLibraryStore.remove(entry.id);
+                                setResourceLibraryEntries(ResourceLibraryStore.getAll());
                               }}
                             >
                               Remove
