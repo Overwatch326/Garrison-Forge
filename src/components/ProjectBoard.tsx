@@ -448,7 +448,24 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
           ),
         );
       } catch {
-        // ignore
+        // Backend failed (e.g. Railway API not wired) – still attach locally so the
+        // build view reflects the resource.
+        const fallbackVendor = {
+          id: crypto.randomUUID(),
+          name: vendorName.trim(),
+          website: vendorWebsite.trim() || undefined,
+          part: vendorPart.trim() || undefined,
+          cost: numericCost,
+          color: vendorColor.trim() || undefined,
+          notesHtml: undefined,
+        };
+        setTasks((prev) =>
+          prev.map((t) =>
+            t.id === targetTask.id
+              ? { ...t, vendors: [...(t.vendors || []), fallbackVendor] }
+              : t,
+          ),
+        );
       }
     } else {
       const newVendor = {
@@ -456,7 +473,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
         name: vendorName.trim(),
         website: vendorWebsite.trim() || undefined,
         part: vendorPart.trim() || undefined,
-        cost: Number.isFinite(costValue || NaN) ? costValue : undefined,
+        cost: numericCost,
         color: vendorColor.trim() || undefined,
         notesHtml: undefined,
       };
