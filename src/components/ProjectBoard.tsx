@@ -381,12 +381,14 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
     const activeProject = projects.find((p) => p.id === activeProjectId) || null;
     const costValue = vendorCost.trim() ? Number(vendorCost) : undefined;
 
+    const numericCost = Number.isFinite(costValue ?? NaN) ? (costValue as number) : undefined;
+
     // Always log into global resource library for future builds,
     // even if we can't yet attach to a specific task.
     ResourceLibraryStore.add({
       name: vendorName.trim(),
       item: vendorPart.trim() || vendorName.trim(),
-      cost: Number.isFinite(costValue || NaN) ? costValue : undefined,
+      cost: numericCost,
       website: vendorWebsite.trim() || undefined,
       notes: undefined,
       costumeTypeUsed: activeProject?.costumeType,
@@ -416,7 +418,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
           name: vendorName.trim(),
           website: vendorWebsite.trim() || undefined,
           part: vendorPart.trim() || undefined,
-          cost: Number.isFinite(costValue || NaN) ? costValue : undefined,
+          cost: numericCost,
           color: vendorColor.trim() || undefined,
           notesHtml: undefined,
         });
@@ -1616,7 +1618,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                         <div className="truncate text-[10px] text-slate-400">
                           {entry.costumeTypeUsed || '—'}
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             className="text-[10px] text-emerald-400 hover:text-emerald-200"
@@ -1641,15 +1643,41 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                               };
 
                               if (useBackend) {
-                                // Attach via API in a real backend scenario
-                                // For now, just update local state
-                                setTasks((prev) =>
-                                  prev.map((t) =>
-                                    t.id === targetTask.id
-                                      ? { ...t, vendors: [...(t.vendors || []), newVendor] }
-                                      : t,
-                                  ),
-                                );
+                                // Persist via API when running with backend
+                                apiCreateVendor(targetTask.id, {
+                                  name: newVendor.name,
+                                  website: newVendor.website,
+                                  part: newVendor.part,
+                                  cost: newVendor.cost,
+                                  color: newVendor.color,
+                                  notesHtml: newVendor.notesHtml,
+                                })
+                                  .then((created) => {
+                                    setTasks((prev) =>
+                                      prev.map((t) =>
+                                        t.id === targetTask.id
+                                          ? {
+                                              ...t,
+                                              vendors: [
+                                                ...(t.vendors || []),
+                                                {
+                                                  id: created.id,
+                                                  name: created.name,
+                                                  website: created.website ?? undefined,
+                                                  part: created.part ?? undefined,
+                                                  cost: created.cost ?? undefined,
+                                                  color: created.color ?? undefined,
+                                                  notesHtml: created.notesHtml ?? undefined,
+                                                },
+                                              ],
+                                            }
+                                          : t,
+                                      ),
+                                    );
+                                  })
+                                  .catch(() => {
+                                    // ignore for now
+                                  });
                               } else {
                                 ProjectStore.updateTask(targetTask.id, {
                                   vendors: [...(targetTask.vendors || []), newVendor],
@@ -1660,6 +1688,18 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                           >
                             Attach
                           </button>
+
+                          {currentUser.role?.id === 'admin' && (
+                            <button
+                              type="button"
+                              className="text-[10px] text-slate-500 hover:text-red-400"
+                              onClick={() => {
+                                ResourceLibraryStore.remove(entry.id);
+                              }}
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))
