@@ -58,6 +58,11 @@ export const ResourceLibraryStore = {
     return this.getAll().filter((e) => e.projectIdUsed === projectId);
   },
 
+  remove(id: string): void {
+    state = { ...state, entries: state.entries.filter((e) => e.id !== id) };
+    saveState(state);
+  },
+
   add(entry: Omit<ResourceEntry, 'id' | 'createdAt'>): ResourceEntry {
     const full: ResourceEntry = {
       ...entry,

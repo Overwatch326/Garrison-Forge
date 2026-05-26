@@ -619,6 +619,10 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
   const totalTasks = tasks.length;
   const totalPhotos = tasks.reduce((sum, t) => sum + (t.images?.length || 0), 0);
   const totalVendors = tasks.reduce((sum, t) => sum + (t.vendors?.length || 0), 0);
+  const totalVendorCost = tasks.reduce(
+    (sum, t) => sum + (t.vendors || []).reduce((sub, v) => sub + (v.cost || 0), 0),
+    0,
+  );
   const totalChecklistItems = checklistAreas.reduce((sum, a) => sum + a.items.length, 0);
   const completedChecklistItems = checklistAreas.reduce(
     (sum, a) => sum + a.items.filter((i) => i.status === 'done').length,
@@ -806,8 +810,8 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
             )}
           </div>
 
-          {activeProject && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300">
+        {activeProject && (
+          <div className="mt-2 grid grid-cols-2 sm:grid-cols-5 gap-2 text-[11px] text-slate-300">
               <div className="relative overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/90 px-3 py-2 flex flex-col gap-0.5 shadow-[0_0_0_1px_rgba(15,23,42,0.8),0_18px_35px_rgba(0,0,0,0.6)]">
                 <span className="text-[9px] uppercase tracking-[0.18em] text-slate-500">Tasks</span>
                 <span className="text-lg font-semibold text-slate-50">{totalTasks}</span>
@@ -825,6 +829,14 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                 <span className="text-lg font-semibold text-slate-50">{totalVendors}</span>
                 <span className="text-[10px] text-slate-500">Sources tied to this build</span>
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-bl from-amber-500/20 to-transparent opacity-70" />
+              </div>
+              <div className="relative overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/90 px-3 py-2 flex flex-col gap-0.5 shadow-[0_0_0_1px_rgba(15,23,42,0.8),0_18px_35px_rgba(0,0,0,0.6)]">
+                <span className="text-[9px] uppercase tracking-[0.18em] text-slate-500">Build Cost</span>
+                <span className="text-lg font-semibold text-slate-50">
+                  ${totalVendorCost.toFixed(2)}
+                </span>
+                <span className="text-[10px] text-slate-500">Sum of vendor costs</span>
+                <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-bl from-emerald-500/25 to-transparent opacity-70" />
               </div>
               <div className="relative overflow-hidden rounded-lg border border-slate-800 bg-gradient-to-br from-slate-950/90 via-slate-900/80 to-slate-950/90 px-3 py-2 flex flex-col gap-0.5 shadow-[0_0_0_1px_rgba(15,23,42,0.8),0_18px_35px_rgba(0,0,0,0.6)]">
                 <span className="text-[9px] uppercase tracking-[0.18em] text-slate-500">Checklist</span>
@@ -848,7 +860,7 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
             </div>
           )}
 
-          <div className="flex gap-1 text-[11px] bg-slate-950/80 border border-slate-800 rounded-md px-1.5 py-1">
+          <div className="mt-3 flex gap-1 text-[11px] bg-slate-950/80 border border-slate-800 rounded-md px-1.5 py-1">
             <button
               type="button"
               className={`px-2 py-0.5 rounded-sm transition-colors ${
