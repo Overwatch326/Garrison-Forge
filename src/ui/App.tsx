@@ -103,12 +103,13 @@ export function App() {
                 Welcome to Garrison Forge
               </h2>
               <p className="text-sm text-slate-300">
-                This is your local workshop for planning and tracking costume builds. The very first
-                account on this device becomes an Admin; everyone else starts as a Member.
+                This is your local workshop for planning and tracking costume builds and troop
+                events. Log new projects, track progress, and keep your garrison&apos;s armor builds in
+                one place.
               </p>
               <p className="text-xs text-slate-500">
-                Once you sign in, you&apos;ll land on the main dashboard with Builds and Settings
-                navigation on the left.
+                Once you sign in, you&apos;ll land on the main dashboard with navigation for Builds,
+                Events, and Settings on the left.
               </p>
             </div>
 
