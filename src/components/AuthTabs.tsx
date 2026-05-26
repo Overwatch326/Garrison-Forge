@@ -136,9 +136,9 @@ export function AuthTabs({ onAuthenticated }: AuthTabsProps) {
 
         {activeTab === "register" && (
           <p className="text-[11px] text-slate-500 mt-0.5">
-            First account created on this device becomes <span className="badge-role">Admin</span>.
-            All later registrations start as <span className="badge-role">Member</span>. Admins can
-            promote others.
+            Use this account to plan, build, and track your costume projects and troop events in one
+            place. You can add builds, log resources, track progress, and keep an eye on upcoming
+            outings.
           </p>
         )}
 

@@ -1704,7 +1704,18 @@ export function ProjectBoard({ currentUser, startNewBuild, selectedProjectId, on
                                     );
                                   })
                                   .catch(() => {
-                                    // ignore for now
+                                    // Backend failed – still attach locally so the
+                                    // build reflects this resource in the cost card.
+                                    setTasks((prev) =>
+                                      prev.map((t) =>
+                                        t.id === targetTask.id
+                                          ? {
+                                              ...t,
+                                              vendors: [...(t.vendors || []), newVendor],
+                                            }
+                                          : t,
+                                      ),
+                                    );
                                   });
                               } else {
                                 ProjectStore.updateTask(targetTask.id, {
